@@ -1,0 +1,40 @@
+- hosts: all
+  remote_user: root
+
+  vars:
+    - key_path : "/tmp/ssh-key.pem"
+#    - status : "absent"
+#    - status : "present"
+#    - sshkey : 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDApWyKP1P0nzrzAsYtBxyHiwlmk853hXbBKfkaXU13bheT6k0lpF/63OhiAav1gSpVOSdtynHDTbeT2wuzfdXR+fB/VELGOqy/271ewBaujzi8rN/dhoxWgl6oe502beS/bGflcO+VVq5do4bnV83DUFiM/ClvexrvmSUtBAsMYHfbeUYbeTT+vB5tB/Ex5fTPEJzP1Vlut0zYVKqqjNu5F11ELFX3k3Eh0olP+/UILk0GzsfcLYnEONzUnZOUoBbniZEiGV4m/VvnQAutbEeL/XolEmDJdrf5t9DgUHIFhL+QzCuyY5sEK2y4nkZMM9+TwyKkt03CanRhxIMsB6lauTzdGAG90e3C++eq94GM+K8SrV1xeo2WQvVyZGZLA27m4FPKHkCOn4+JH0MlnsUz6OZCY3I3G4H4aPtXyFvtkyocf2+XDjZlORfm9NeEdDNuVtNVGNgbHektt/EUIJEQu6yZkjhM/zAQ7WvQ9Md6bM1iCMzH2tgLuf9V2kAlk= developer@ansible-test-host-2'
+
+  tasks:
+
+  - name: "Put a variable sshkey to a remote ssh_pub file"
+    copy: content="{{ sshkey }}" dest=/tmp/ssh-key.pem
+    tags:
+      - ssh
+
+  - name: "Read a remote ssh_pub file"
+    slurp:
+      src: /tmp/ssh-key.pem
+    register: ssh_keys
+    tags:
+      - ssh
+
+  - name: "Check keys from  a remote ssh_pub file"
+    debug: msg="{{ ssh_keys['content'] | b64decode }}"
+    tags:
+      - ssh
+
+  - name: "Add ssh key to remote host"
+    authorized_key:
+      user: "{{ansible_user}}"
+      state: "{{status}}"
+      key: "{{ ssh_keys['content'] | b64decode }}"
+    tags:
+      - ssh  
+      
+  - name:  Delete temp file
+    file:
+      state: absent
+      path: /tmp/ssh-key.pem
